@@ -1,0 +1,9 @@
+services:
+  netmath:
+    container_name: netmath
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    command: ['dx', '-v', 'serve', '--port', '3030']
+    restart: always
