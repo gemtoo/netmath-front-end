@@ -7,5 +7,6 @@ RUN cargo install --path ./packages/cli
 RUN git clone --depth 1 https://github.com/gemtoo/netmath.git /app
 WORKDIR /app
 RUN dx build
-ENTRYPOINT dist/netmath &
-CMD socat TCP-LISTEN:9999,reuseaddr,fork TCP:localhost:8080
+
+COPY run.sh /usr/bin
+ENTRYPOINT run.sh

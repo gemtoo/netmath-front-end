@@ -38,6 +38,7 @@ fn Home() -> Element {
                                 "style": "text-align: center;",
                                 img {
                                     src: "https://static.gemtoo.dev/assets/graph.webp",
+                                    class: "resize",
                                 } br {} br {}
                                 strong { "Subnet Calculator" }
                                 br {} br {}
