@@ -28,7 +28,6 @@ fn Home() -> Element {
                 rel: "stylesheet",
                 href: "https://static.gemtoo.dev/assets/style.css"
             }
-            title { "Subnet Calculator" }
         }
         body {
             table {
