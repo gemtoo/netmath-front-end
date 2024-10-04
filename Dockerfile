@@ -1,7 +1,11 @@
 FROM rust:1.80-bookworm
 
-RUN apt update && apt upgrade -y && apt install -y subnetcalc net-tools nano libssl-dev gcc pkg-config git
+RUN apt update && apt upgrade -y && apt install -y subnetcalc net-tools nano libssl-dev gcc pkg-config git socat
+RUN git clone --depth 1 https://github.com/DioxusLabs/dioxus.git /dx
+WORKDIR /dx
+RUN cargo install --path ./packages/cli
 RUN git clone --depth 1 https://github.com/gemtoo/netmath.git /app
-RUN cargo install dioxus-cli
 WORKDIR /app
-ENTRYPOINT dx -v serve
+RUN dx build
+ENTRYPOINT dist/netmath &
+CMD socat TCP-LISTEN:9999,reuseaddr,fork TCP:localhost:8080

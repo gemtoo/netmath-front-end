@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    network_mode: host
     restart: always
+    ports:
+      - 9999:9999
     stop_grace_period: 0s
