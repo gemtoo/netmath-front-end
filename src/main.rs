@@ -28,6 +28,7 @@ fn Home() -> Element {
                 rel: "stylesheet",
                 href: "https://static.gemtoo.dev/assets/style.css"
             }
+            title { "Subnet Calculator" }
         }
         body {
             table {
@@ -38,7 +39,7 @@ fn Home() -> Element {
                                 "style": "text-align: center;",
                                 img {
                                     src: "https://static.gemtoo.dev/assets/graph.webp",
-                                    class: "resize",
+                                    style: "width: 250px;",
                                 } br {} br {}
                                 strong { "Subnet Calculator" }
                                 br {} br {}
