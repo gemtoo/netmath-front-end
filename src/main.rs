@@ -26,7 +26,7 @@ fn Home() -> Element {
         head {
             link {
                 rel: "stylesheet",
-                href: "https://static.gemtoo.dev/assets/style.css"
+                href: "https://static.gemtoo.dev/assets/netmath.css"
             }
         }
         body {
