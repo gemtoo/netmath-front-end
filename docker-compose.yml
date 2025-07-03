@@ -1,10 +1,9 @@
 services:
   netmath:
-    container_name: netmath
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
     ports:
-      - 9999:9999
+      - 80:80
     stop_grace_period: 0s
