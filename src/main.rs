@@ -1,111 +1,140 @@
-#![allow(non_snake_case, unused)]
+use gloo_net::http::Request;
+use web_sys::HtmlInputElement;
+use yew::prelude::*;
+use yew_router::prelude::*;
+use yew::{function_component, Html, Properties};
 
-use dioxus::prelude::*;
-
-#[derive(Clone, Routable, Debug, PartialEq)]
+#[derive(Clone, Routable, PartialEq)]
 enum Route {
-    #[route("/")]
-    Home {},
+    #[at("/")]
+    Home,
+}
+
+fn switch(routes: Route) -> Html {
+    match routes {
+        Route::Home => html! { <Home /> },
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct Props {
+    pub html: String,
+}
+
+#[function_component(SafeHtml)]
+pub fn safe_html(props: &Props) -> Html {
+    let div = gloo_utils::document().create_element("div").unwrap();
+    div.set_inner_html(&props.html.clone());
+
+    Html::VRef(div.into())
+}
+
+#[function_component(App)]
+fn app() -> Html {
+    html! {
+        <BrowserRouter>
+            <Switch<Route> render={switch} />
+        </BrowserRouter>
+    }
 }
 
 fn main() {
-    launch(App);
+    yew::Renderer::<App>::new().render();
 }
 
-fn App() -> Element {
-    rsx! {
-        Router::<Route> {}
-    }
-}
+#[function_component(Home)]
+fn home() -> Html {
+    let subnet = use_state(|| "5.4.3.2/31".to_string());
+    let calc_result = use_state(|| "Waiting for input...".to_string());
 
-#[component]
-fn Home() -> Element {
-    let mut subnet = use_signal(|| "5.4.3.2/31".to_string());
-    let mut signal_calc_result = use_signal(|| "Waiting for input...".to_string());
-    rsx! {
-        head {
-            link {
-                rel: "stylesheet",
-                href: "https://static.gemtoo.dev/assets/netmath.css"
-            }
-        }
-        body {
-            table {
-                tbody {
-                    tr {
-                        td {
-                            p {
-                                "style": "text-align: center;",
-                                img {
-                                    src: "https://static.gemtoo.dev/assets/graph.webp",
-                                    style: "width: 270px;",
-                                } br {} br {}
-                                strong { "Subnet Calculator" }
-                                br {} br {}
-                                "Type in IP addresses, CIDR notations, binary, hex." br {}
-                                "For example: 10.13.37.10, 200::/7, 0xBABEFACE, 001011011010." br {} br {}
-                                input {
-                                    value: "{subnet}",
-                                    oninput: move |event| {
-                                        let eventval = event.value();
-                                        let mut raw_calc_result = Vec::new();
-                                        let mut calc_result = String::new();
-                                        if is_whitelisted(&eventval) {
-                                            subnet.set(eventval.clone());
-                                            let cmd_output = std::process::Command::new("subnetcalc")
-                                            	.arg(eventval)
-                                            	.arg("-nocolor")
-                                            	.arg("-n")
-                                            	.output()
-                                            	.unwrap();
-                                            if cmd_output.stdout.len() != 0 {
-                                            raw_calc_result = cmd_output.stdout;
-                                            } else {
-                                            raw_calc_result = cmd_output.stderr;
-                                            }
-                                            calc_result = String::from_utf8(raw_calc_result).unwrap()
-                                            	.replace("\n", "<br>")
-                                            	.replace("ERROR: ", "")
-                                            	.replace("!", ".")
-                                            	.replace("{ ", "")
-                                            	.replace(" }", "");
-                                            signal_calc_result.set(calc_result.into());
-                                        } else {
-                                            subnet.set(eventval.clone());
-                                            signal_calc_result.set("This pattern is restricted.".into());
-                                        }
-                                    },
-                                }
-                                p { dangerous_inner_html: "{signal_calc_result}" }
-                            }
+    let oninput = {
+        let subnet = subnet.clone();
+        let calc_result = calc_result.clone();
+
+        Callback::from(move |e: InputEvent| {
+            let input: HtmlInputElement = e.target_unchecked_into();
+            let eventval = input.value();
+
+            subnet.set(eventval.clone());
+            calc_result.set("Calculating...".into());
+
+            let subnet_clone = eventval.clone();
+            let calc_result = calc_result.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let body =
+                    match serde_json::to_string(&serde_json::json!({ "subnet": subnet_clone })) {
+                        Ok(b) => b,
+                        Err(e) => {
+                            calc_result.set(format!("JSON error: {}", e));
+                            return;
                         }
+                    };
+                let response = match Request::post("https://netmath.gemtoo.dev/api")
+                    .header("Content-Type", "application/json")
+                    .body(body)
+                    .unwrap()
+                    .send()
+                    .await
+                {
+                    Ok(resp) => resp,
+                    Err(e) => {
+                        calc_result.set(format!("Network error: {}", e));
+                        return;
+                    }
+                };
+
+                if !response.ok() {
+                    calc_result.set(format!("API error: {}.", response.status()));
+                    return;
+                }
+
+                match response.text().await {
+                    Ok(text) => {
+                        web_sys::console::log_1(&format!("API response: {}", text).into());
+                        calc_result.set(text);
+                    }
+                    Err(e) => {
+                        calc_result.set(format!("Response error: {}", e));
                     }
                 }
-            }
-        }
-    }
-}
+            });
+        })
+    };
 
-const ALLOWED_CHARS: &str = "0123456789abcdefxABCDEFX.:/";
-const ALLOWED_LETTERS: &str = "abcdefxABCDEFX";
-
-fn is_whitelisted(input: &str) -> bool {
-    // By default subnetcalc can also query against DNS and make use of the network.
-    // This makes frontend sluggish. Any input that contains both dot and a letter, should not be allowed.
-    // Because it is going to be checked against DNS and it could never be an IP address.
-    if input.len() >= 2 {
-        let has_dot = input.chars().any(|c| ".".contains(c));
-        let has_allowed_letter = input.chars().any(|c| ALLOWED_LETTERS.contains(c));
-        if has_dot == true && has_allowed_letter == true {
-            return false;
-        }
+    html! {
+        <>
+            <head>
+                <link rel="stylesheet" href="https://static.gemtoo.dev/assets/netmath.css" />
+            </head>
+            <body>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div style="text-align: center;">
+                                    <img
+                                        src="https://static.gemtoo.dev/assets/graph.webp"
+                                        style="width: 270px;"
+                                    />
+                                    <br /><br />
+                                    <strong>{ "Subnet Calculator" }</strong>
+                                    <br /><br />
+                                    { "Type in IP addresses, CIDR notations, binary, hex." }
+                                    <br />
+                                    { "For example: 10.13.37.10, 200::/7, 0xBABEFACE, 001011011010." }
+                                    <br /><br />
+                                    <input
+                                        type="text"
+                                        value={(*subnet).clone()}
+                                        {oninput}
+                                    />
+                                    <SafeHtml html={(*calc_result).clone()} />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </body>
+        </>
     }
-    // Maximum possible input is 79 chars of length and is as follows:
-    // ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
-    // Anything beyond is restricted for security reasons.
-    if input.len() >= 80 {
-        return false;
-    }
-    let are_all_chars_allowed = input.chars().all(|c| ALLOWED_CHARS.contains(c));
-    return are_all_chars_allowed;
 }
