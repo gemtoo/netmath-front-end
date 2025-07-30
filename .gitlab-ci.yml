@@ -28,6 +28,7 @@ stages:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - docker buildx create --use --name cibuilder
+    - |
       docker buildx build \
         --push \
         --tag ${CI_REGISTRY_IMAGE}:${DOCKER_IMAGE_HASH_TAG} \
@@ -50,8 +51,6 @@ stages:
     - ssh-keyscan $HOST >> ~/.ssh/known_hosts
     - echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
   script:
-    - cp -v "$ENV" .env
-    - set -a && source .env && set +a
     - envsubst < deploy-docker-compose.template > deploy-docker-compose.yml
     - docker context create remote --description "remote docker host" --docker "host=ssh://$SSH_USER@$HOST"
     - docker context use remote

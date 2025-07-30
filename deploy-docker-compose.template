@@ -1,20 +1,19 @@
 services:
-  netmath-${CI_ENVIRONMENT_NAME}:
+  netmath-front-end-${CI_ENVIRONMENT_NAME}:
     image: ${CI_REGISTRY_IMAGE}:${DOCKER_IMAGE_SEMANTIC_TAG}
-    cap_drop:
-      - ALL
     restart: always
     stop_grace_period: 0s
+    environment:
+      BACKEND_URL: ${BACKEND_URL}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.example.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.example.service=example"
-      - "traefik.http.routers.example.priority=1000"
-      - "traefik.http.routers.example.entrypoints=web"
-      - "traefik.http.routers.example.entrypoints=websecure"
-      - "traefik.http.routers.example.tls.certResolver=letsencrypt"
-      - "traefik.http.services.kasm-desktop.loadbalancer.server.scheme=http"
-      - "traefik.http.services.example.loadbalancer.server.port=80"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.service=netmath-front-end-${CI_ENVIRONMENT_NAME}"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.priority=1000"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.entrypoints=web"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.netmath-front-end-${CI_ENVIRONMENT_NAME}.tls.certResolver=letsencrypt"
+      - "traefik.http.services.netmath-front-end-${CI_ENVIRONMENT_NAME}.loadbalancer.server.port=80"
 
 networks:
   default:
