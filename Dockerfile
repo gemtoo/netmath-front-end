@@ -3,9 +3,7 @@ FROM rust:1.88-bookworm AS chef
 ARG BUILD_PROFILE=dev
 RUN rustup target add wasm32-unknown-unknown
 RUN apt update && apt install -y ca-certificates
-RUN cargo install cargo-chef --locked
-RUN cargo install trunk --locked
-RUN cargo install wasm-bindgen-cli --locked
+RUN cargo install cargo-chef trunk wasm-bindgen-cli --locked
 
 FROM chef AS planner
 WORKDIR /app

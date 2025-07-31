@@ -705,6 +705,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "netmath-front-end"
+version = "1.0.0"
+dependencies = [
+ "gloo-net 0.6.0",
+ "gloo-utils 0.2.0",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "yew",
+ "yew-router",
+]
+
+[[package]]
 name = "num_cpus"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1065,20 +1079,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9d12581f227e93f094d3af2ae690a574abb8a2b9b7a96e7cfe9647b2b617678"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "trunk-template"
-version = "0.1.0"
-dependencies = [
- "gloo-net 0.6.0",
- "gloo-utils 0.2.0",
- "serde",
- "serde_json",
- "wasm-bindgen-futures",
- "web-sys",
- "yew",
- "yew-router",
 ]
 
 [[package]]
