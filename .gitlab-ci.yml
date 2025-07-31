@@ -23,12 +23,24 @@ stages:
     DOCKER_BUILDKIT: 1
     BUILDKIT_PROGRESS: plain
     BUILDX_CACHE_FLAGS: ""
-    CACHE_TAG: "cache-image"
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - docker buildx create --use --name cibuilder
     - |
+      # Use separate cache tags for dev vs prod.
+      if [ "$CI_ENVIRONMENT_NAME" = "prod" ]; then
+        CACHE_TAG="cache-image-prod"
+        CONDITIONAL_FLAGS="\
+          --platform linux/amd64 \
+          --build-arg BUILD_PROFILE=release"
+      else
+        CACHE_TAG="cache-image-dev"
+        CONDITIONAL_FLAGS="\
+          --platform linux/amd64 \
+          --build-arg BUILD_PROFILE=dev"
+      fi
+
       docker buildx build \
         --push \
         --tag ${CI_REGISTRY_IMAGE}:${DOCKER_IMAGE_HASH_TAG} \
@@ -36,13 +48,16 @@ stages:
         --tag ${CI_REGISTRY_IMAGE}:latest \
         --cache-to type=registry,ref=$CI_REGISTRY_IMAGE/$CACHE_TAG,mode=max,compression=zstd \
         --cache-from=type=registry,ref=$CI_REGISTRY_IMAGE/$CACHE_TAG \
+        $CONDITIONAL_FLAGS \
         .
 
 .deploy-template: &deploy-template
   stage: deploy
   image: docker:28-cli
+  variables:
+    COMPOSE_HTTP_TIMEOUT: 300
   before_script:
-    - apk add --no-cache openssh-client gettext rsync
+    - apk add --no-cache openssh-client gettext
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY_BASE64" | base64 -d > ~/.ssh/id_ed25519
     - chmod 600 ~/.ssh/id_ed25519

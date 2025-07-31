@@ -1,8 +1,8 @@
 use gloo_net::http::Request;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use yew_router::prelude::*;
 use yew::{function_component, Html, Properties};
+use yew_router::prelude::*;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
